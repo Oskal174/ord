@@ -1073,11 +1073,41 @@ impl Server {
     let inscriptions = index.get_inscriptions_in_block(block_height)?;
 
     Ok(if accept_json.0 {
-      let mut content_data: Vec<(InscriptionId, Option<String>)> = vec![];
+      let mut content_data: Vec<(InscriptionId, InscriptionJson)> = vec![];
       for inscription_id in inscriptions {
+        let entry = index
+          .get_inscription_entry(inscription_id)?
+          .ok_or_not_found(|| format!("inscription {inscription_id}"))?;
+
         let inscription = index
           .get_inscription_by_id(inscription_id)?
           .ok_or_not_found(|| format!("inscription {inscription_id}"))?;
+
+        let satpoint = index
+          .get_inscription_satpoint_by_id(inscription_id)?
+          .ok_or_not_found(|| format!("inscription {inscription_id}"))?;
+
+        let output = if satpoint.outpoint == unbound_outpoint() {
+          None
+        } else {
+          Some(
+            index
+              .get_transaction(satpoint.outpoint.txid)?
+              .ok_or_not_found(|| format!("inscription {inscription_id} current transaction"))?
+              .output
+              .into_iter()
+              .nth(satpoint.outpoint.vout.try_into().unwrap())
+              .ok_or_not_found(|| {
+                format!("inscription {inscription_id} current transaction output")
+              })?,
+          )
+        };
+
+        let previous = index.get_inscription_id_by_inscription_number(entry.number - 1)?;
+
+        let next = index.get_inscription_id_by_inscription_number(entry.number + 1)?;
+
+        let children = index.get_children_by_inscription_id(inscription_id)?;
 
         let inscription_content = match inscription.media() {
           Media::Text => {
@@ -1088,7 +1118,27 @@ impl Server {
           }
           _ => None,
         };
-        content_data.push((inscription_id, inscription_content));
+
+        content_data.push((
+          inscription_id,
+          InscriptionJson::new(
+            page_config.chain,
+            children,
+            entry.fee,
+            entry.height,
+            inscription,
+            inscription_id,
+            inscription_content,
+            entry.parent,
+            next,
+            entry.number,
+            output,
+            previous,
+            entry.sat,
+            satpoint,
+            timestamp(entry.timestamp),
+          ),
+        ));
       }
 
       Json(InscriptionsContentJson::new(content_data)).into_response()

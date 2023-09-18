@@ -9,12 +9,12 @@ pub(crate) struct InscriptionsHtml {
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct InscriptionsContentJson {
-  pub content: Vec<(InscriptionId, Option<String>)>
+  pub content: Vec<(InscriptionId, InscriptionJson)>
 }
 
 impl InscriptionsContentJson {
   pub fn new(
-    content: Vec<(InscriptionId, Option<String>)>
+    content: Vec<(InscriptionId, InscriptionJson)>
   ) -> Self {
     Self {
       content,
