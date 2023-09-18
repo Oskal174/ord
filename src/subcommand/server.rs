@@ -7,11 +7,11 @@ use {
   super::*,
   crate::page_config::PageConfig,
   crate::templates::{
-    BlockHtml, ClockSvg, HomeHtml, InputHtml, InscriptionHtml, InscriptionJson,
-    InscriptionsBlockHtml, InscriptionsHtml, InscriptionsJson, OutputHtml, OutputJson, PageContent,
-    PageHtml, PreviewAudioHtml, PreviewImageHtml, PreviewModelHtml, PreviewPdfHtml,
-    PreviewTextHtml, PreviewUnknownHtml, PreviewVideoHtml, RangeHtml, RareTxt, SatHtml, SatJson,
-    TransactionHtml,
+    inscriptions::InscriptionsContentJson, BlockHtml, ClockSvg, HomeHtml, InputHtml,
+    InscriptionHtml, InscriptionJson, InscriptionsBlockHtml, InscriptionsHtml, InscriptionsJson,
+    OutputHtml, OutputJson, PageContent, PageHtml, PreviewAudioHtml, PreviewImageHtml,
+    PreviewModelHtml, PreviewPdfHtml, PreviewTextHtml, PreviewUnknownHtml, PreviewVideoHtml,
+    RangeHtml, RareTxt, SatHtml, SatJson, TransactionHtml,
   },
   axum::{
     body,
@@ -1073,7 +1073,25 @@ impl Server {
     let inscriptions = index.get_inscriptions_in_block(block_height)?;
 
     Ok(if accept_json.0 {
-      Json(InscriptionsJson::new(inscriptions, None, None, None, None)).into_response()
+      let mut content_data: Vec<(InscriptionId, Option<String>)> = vec![];
+      for inscription_id in inscriptions {
+        let inscription = index
+          .get_inscription_by_id(inscription_id)?
+          .ok_or_not_found(|| format!("inscription {inscription_id}"))?;
+
+        let inscription_content = match inscription.media() {
+          Media::Text => {
+            let content = inscription
+              .body()
+              .ok_or_not_found(|| format!("inscription {inscription_id} content"))?;
+            Some(String::from_utf8(content.to_vec()).expect("Content encode"))
+          }
+          _ => None,
+        };
+        content_data.push((inscription_id, inscription_content));
+      }
+
+      Json(InscriptionsContentJson::new(content_data)).into_response()
     } else {
       InscriptionsBlockHtml::new(
         block_height,

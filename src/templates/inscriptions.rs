@@ -8,6 +8,21 @@ pub(crate) struct InscriptionsHtml {
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct InscriptionsContentJson {
+  pub content: Vec<(InscriptionId, Option<String>)>
+}
+
+impl InscriptionsContentJson {
+  pub fn new(
+    content: Vec<(InscriptionId, Option<String>)>
+  ) -> Self {
+    Self {
+      content,
+    }
+  }
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct InscriptionsJson {
   pub inscriptions: Vec<InscriptionId>,
   pub prev: Option<i64>,
