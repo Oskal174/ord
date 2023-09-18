@@ -990,6 +990,16 @@ impl Server {
 
     let children = index.get_children_by_inscription_id(inscription_id)?;
 
+    let content = match inscription.media() {
+      Media::Text => {
+        let content = inscription
+          .body()
+          .ok_or_not_found(|| format!("inscription {inscription_id} content"))?;
+        Some(String::from_utf8(content.to_vec()).expect("Content encode"))
+      }
+      _ => None,
+    };
+
     Ok(if accept_json.0 {
       Json(InscriptionJson::new(
         page_config.chain,
@@ -998,6 +1008,7 @@ impl Server {
         entry.height,
         inscription,
         inscription_id,
+        content,
         entry.parent,
         next,
         entry.number,
