@@ -8,17 +8,21 @@ pub(crate) struct InscriptionsHtml {
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct BlockJson {
+  pub height: u64,
+  pub hash: String,
+  pub timestamp: i64,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct InscriptionsContentJson {
-  pub content: Vec<(InscriptionId, InscriptionJson)>
+  pub block: BlockJson,
+  pub content: Vec<(InscriptionId, InscriptionJson)>,
 }
 
 impl InscriptionsContentJson {
-  pub fn new(
-    content: Vec<(InscriptionId, InscriptionJson)>
-  ) -> Self {
-    Self {
-      content,
-    }
+  pub fn new(block: BlockJson, content: Vec<(InscriptionId, InscriptionJson)>) -> Self {
+    Self { block, content }
   }
 }
 

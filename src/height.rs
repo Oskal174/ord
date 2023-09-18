@@ -46,6 +46,12 @@ impl PartialEq<u64> for Height {
   }
 }
 
+impl From<u64> for Height {
+  fn from(h: u64) -> Self {
+    Self(h)
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;

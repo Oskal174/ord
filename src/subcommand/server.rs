@@ -1,3 +1,5 @@
+use crate::templates::inscriptions::BlockJson;
+
 use {
   self::{
     accept_json::AcceptJson,
@@ -1141,7 +1143,22 @@ impl Server {
         ));
       }
 
-      Json(InscriptionsContentJson::new(content_data)).into_response()
+      let block_hash = index
+        .block_hash(Some(block_height))?
+        .ok_or_not_found(|| "block_hash")?
+        .to_string();
+
+      let block_timestamp = index.block_time(block_height.into())?.unix_timestamp();
+
+      Json(InscriptionsContentJson::new(
+        BlockJson {
+          height: block_height,
+          hash: block_hash,
+          timestamp: block_timestamp,
+        },
+        content_data,
+      ))
+      .into_response()
     } else {
       InscriptionsBlockHtml::new(
         block_height,
