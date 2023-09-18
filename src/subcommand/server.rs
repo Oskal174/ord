@@ -7,11 +7,11 @@ use {
   super::*,
   crate::page_config::PageConfig,
   crate::templates::{
-    BlockHtml, ClockSvg, HomeHtml, InputHtml, InscriptionHtml, InscriptionJson,
-    InscriptionsBlockHtml, InscriptionsHtml, InscriptionsJson, OutputHtml, OutputJson, PageContent,
-    PageHtml, PreviewAudioHtml, PreviewImageHtml, PreviewModelHtml, PreviewPdfHtml,
-    PreviewTextHtml, PreviewUnknownHtml, PreviewVideoHtml, RangeHtml, RareTxt, SatHtml, SatJson,
-    TransactionHtml,
+    inscription::RawBlockContentJson, inscription::RawContentJson, BlockHtml, ClockSvg, HomeHtml,
+    InputHtml, InscriptionHtml, InscriptionJson, InscriptionsBlockHtml, InscriptionsHtml,
+    InscriptionsJson, OutputHtml, OutputJson, PageContent, PageHtml, PreviewAudioHtml,
+    PreviewImageHtml, PreviewModelHtml, PreviewPdfHtml, PreviewTextHtml, PreviewUnknownHtml,
+    PreviewVideoHtml, RangeHtml, RareTxt, SatHtml, SatJson, TransactionHtml,
   },
   axum::{
     body,
@@ -177,6 +177,8 @@ impl Server {
         .route("/input/:block/:transaction/:input", get(Self::input))
         .route("/inscription/:inscription_id", get(Self::inscription))
         .route("/inscriptions", get(Self::inscriptions))
+        .route("/raw/content/:inscription_id", get(Self::raw_content))
+        .route("/raw/content/block/:height", get(Self::raw_block_content))
         .route(
           "/inscriptions/block/:height",
           get(Self::inscriptions_in_block),
@@ -950,6 +952,54 @@ impl Server {
       Media::Unknown => Ok(PreviewUnknownHtml.into_response()),
       Media::Video => Ok(PreviewVideoHtml { inscription_id }.into_response()),
     }
+  }
+
+  async fn raw_content(
+    Extension(index): Extension<Arc<Index>>,
+    Path(inscription_id): Path<InscriptionId>,
+  ) -> ServerResult<Response> {
+    let inscription = index
+      .get_inscription_by_id(inscription_id)?
+      .ok_or_not_found(|| format!("inscription {inscription_id}"))?;
+
+    let content = match inscription.media() {
+      Media::Text => {
+        let content = inscription
+          .body()
+          .ok_or_not_found(|| format!("inscription {inscription_id} content"))?;
+        Some(String::from_utf8(content.to_vec()).expect("Content encode"))
+      }
+      _ => None,
+    };
+
+    Ok(Json(RawContentJson::new(inscription_id, content)).into_response())
+  }
+
+  async fn raw_block_content(
+    Extension(index): Extension<Arc<Index>>,
+    Path(block_height): Path<u64>,
+  ) -> ServerResult<Response> {
+    let inscriptions = index.get_inscriptions_in_block(block_height)?;
+
+    let mut content_data: Vec<(InscriptionId, Option<String>)> = vec![];
+    for inscription_id in inscriptions {
+      let inscription = index
+        .get_inscription_by_id(inscription_id)?
+        .ok_or_not_found(|| format!("inscription {inscription_id}"))?;
+
+      let inscription_content = match inscription.media() {
+        Media::Text => {
+          let content = inscription
+            .body()
+            .ok_or_not_found(|| format!("inscription {inscription_id} content"))?;
+          Some(String::from_utf8(content.to_vec()).expect("Content encode"))
+        }
+        _ => None,
+      };
+      content_data.push((inscription_id, inscription_content));
+    }
+
+    Ok(Json(RawBlockContentJson::new(content_data)).into_response())
   }
 
   async fn inscription(

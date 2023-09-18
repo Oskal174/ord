@@ -87,6 +87,32 @@ impl PageContent for InscriptionHtml {
   }
 }
 
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct RawContentJson {
+  pub inscription_id: InscriptionId,
+  pub content: Option<String>,
+}
+
+impl RawContentJson {
+  pub fn new(inscription_id: InscriptionId, content: Option<String>) -> Self {
+    Self {
+      inscription_id,
+      content,
+    }
+  }
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct RawBlockContentJson {
+  pub content: Vec<(InscriptionId, Option<String>)>,
+}
+
+impl RawBlockContentJson {
+  pub fn new(content: Vec<(InscriptionId, Option<String>)>) -> Self {
+    Self { content }
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
