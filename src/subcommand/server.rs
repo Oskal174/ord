@@ -1,5 +1,5 @@
 use crate::templates::inscriptions::BlockJson;
-
+use std::collections::HashMap;
 use {
   self::{
     accept_json::AcceptJson,
@@ -1075,7 +1075,7 @@ impl Server {
     let inscriptions = index.get_inscriptions_in_block(block_height)?;
 
     Ok(if accept_json.0 {
-      let mut content_data: Vec<(InscriptionId, InscriptionJson)> = vec![];
+      let mut content_data = HashMap::<InscriptionId, InscriptionJson>::new();
       for inscription_id in inscriptions {
         let entry = index
           .get_inscription_entry(inscription_id)?
@@ -1121,7 +1121,7 @@ impl Server {
           _ => None,
         };
 
-        content_data.push((
+        content_data.insert(
           inscription_id,
           InscriptionJson::new(
             page_config.chain,
@@ -1140,7 +1140,7 @@ impl Server {
             satpoint,
             timestamp(entry.timestamp),
           ),
-        ));
+        );
       }
 
       let block_hash = index
