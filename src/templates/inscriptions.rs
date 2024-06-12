@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use super::*;
 
 #[derive(Boilerplate)]
@@ -5,6 +6,25 @@ pub(crate) struct InscriptionsHtml {
   pub(crate) inscriptions: Vec<InscriptionId>,
   pub(crate) prev: Option<i64>,
   pub(crate) next: Option<i64>,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct BlockJson {
+  pub height: u64,
+  pub hash: String,
+  pub timestamp: i64,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct InscriptionsContentJson {
+  pub block: BlockJson,
+  pub content: HashMap<InscriptionId, InscriptionJson>,
+}
+
+impl InscriptionsContentJson {
+  pub fn new(block: BlockJson, content: HashMap<InscriptionId, InscriptionJson>) -> Self {
+    Self { block, content }
+  }
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
